@@ -144,25 +144,49 @@ if prompt := st.chat_input("Es. l'inserimento di un credito in F24 è un extra?"
         # INSERISCI QUI LA TUA CHIAVE GROQ
         client = Groq(api_key=st.secrets["GROQ_API_KEY"])
         
-        mini_extra = df_extra[['TITOLO_CLEAN', 'PREZZO', 'DESCRIZIONE', 'RESPONSABILE', 'MOLTIPLICATORE', 'RANGE', 'NOTE']].to_string(index=False)
-        sys_prompt = f"""Sei l'esperto Payroll di riferimento. 
-        LISTINO: {mini_extra}
-        REGOLE:
-        1. Se attività nelle inclusioni gratuite -> GRATUITA.
-        2. Se Extra: classifica 'Extra Tipizzato' o 'Non Tipizzato'.
-        3. Clasifica 'Prezzo Fisso' o 'Variabile'.
-        4. Se l'utente corregge le ore, ricalcola.
-        RISPOSTA OBBLIGATORIA:
-        - STATO: [Incluso/Extra Tipizzato/Non Tipizzato]
-        - TIPO: [Gratuito/Fisso/Variabile]
-        - CALCOLO: [Dettaglio aritmetico]
-        - RESPONSABILE: [JET o CDL]"""
+        # Preparazione dati per il contesto
+        context_incluse = df_incluse.to_string(index=False)
+        # Usiamo TITOLO_CLEAN per coerenza con il resto dell'app
+        mini_extra = df_extra[['TITOLO_CLEAN', 'PREZZO', 'DESCRIZIONE', 'RESPONSABILE', 'MOLTIPLICATORE', 'RANGE', 'NOTE', 'CATEGORIA']].to_string(index=False)
+        
+        sys_prompt = f"""Sei l'Assistente Tecnico Payroll di riferimento. Il tuo compito è fornire preventivi e verifiche basandoti ESCLUSIVAMENTE sui dati forniti. 
 
-        res = client.chat.completions.create(
-            messages=[{"role": "system", "content": sys_prompt}] + st.session_state.messages,
-            model="llama-3.3-70b-versatile",
-            temperature=0.2
-        )
-        ans = res.choices[0].message.content
-        st.markdown(ans)
-        st.session_state.messages.append({"role": "assistant", "content": ans})
+        GERARCHIA DELLE FONTI (Ordine tassativo):
+        1. FOGLIO INCLUSIONI: Se l'attività è citata qui o rientra nel "Payroll All-inclusive", dichiara: "STATO: Incluso (Gratuito)".
+        2. FOGLIO EXTRA: Se non è inclusa, cerca nel listino Extra. Se la trovi, è un "Extra Tipizzato".
+        3. ANALOGIA: Se non trovi la voce esatta, cerca nel listino Extra attività simili per categoria o natura.
+        4. REGOLA GENERALE (Protocollo 20/30): Se l'attività non è a listino e non trovi analogie, applica questa regola: "Se la pratica richiede più di 20 minuti per dipendente, il costo è di 30€ a dipendente".
+
+        REGOLE DI RIGORE:
+        - NO ALLUCINAZIONI: Se non conosci un acronimo (es. VIG) e non è nei file forniti, NON inventare il significato. Rispondi: "Acronimo non trovato nel database ufficiale, specifica di cosa si tratta".
+        - PREZZO FISSO VS VARIABILE: 'Fisso' se c'è solo il prezzo unitario. 'Variabile' se ci sono moltiplicatori (a cedolino, all'ora, a pratica, ecc.).
+        - CALCOLO ARITMETICO: Mostra sempre i passaggi (es. 30€ x 10 dipendenti = 300€).
+        - INCERTEZZA DATI: Se non sai quanti sono i dipendenti, NON inventare un numero. Chiedi: "Per quanti dipendenti dobbiamo calcolare l'attività?".
+        - DISCLAIMER: Per ogni preventivo basato su analogia o regola 20/30, aggiungi: "Nota: Stima basata su protocollo extra non codificati, soggetta a conferma".
+
+        ---
+        DATABASE INCLUSIONI:
+        {context_incluse}
+
+        DATABASE EXTRA:
+        {mini_extra}
+        ---
+
+        STRUTTURA OBBLIGATORIA RISPOSTA:
+        - ANALISI: [Breve spiegazione di dove hai trovato l'informazione]
+        - STATO: [Incluso / Extra Tipizzato / Extra NON Tipizzato]
+        - TIPO PREZZO: [Gratuito / Prezzo Fisso / Prezzo Variabile / Regola 20-30]
+        - CALCOLO: [Dettaglio matematico chiaro]
+        """
+
+        try:
+            res = client.chat.completions.create(
+                messages=[{"role": "system", "content": sys_prompt}] + st.session_state.messages,
+                model="llama-3.3-70b-versatile",
+                temperature=0.1 # Abbassata al minimo per massima precisione e zero creatività
+            )
+            ans = res.choices[0].message.content
+            st.markdown(ans)
+            st.session_state.messages.append({"role": "assistant", "content": ans})
+        except Exception as e:
+            st.error(f"Errore AI: {e}")
