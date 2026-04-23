@@ -5,7 +5,7 @@ import urllib.parse
 import re
 
 # --- CONFIGURAZIONE PAGINA ---
-st.set_page_config(page_title="Tariffario Extra - Uso Interno 🛸", layout="wide", page_icon="🛸")
+st.set_page_config(page_title="Tariffario Extra - Interno 🛸", layout="wide", page_icon="🛸")
 
 # Custom CSS avanzato
 st.markdown("""
@@ -106,8 +106,8 @@ def torna_home():
 
 # 1. HOME PAGE
 if st.session_state.page == "🏠 Home":
-    st.title("Hub Payroll 🛸")
-    st.markdown("### Benvenuto. Cosa desideri consultare?")
+    st.title("Tariffario Attività Extra 🛸")
+    st.markdown("### Ciao! Cosa desideri consultare?")
     
     sq = st.text_input("🔍 Cerca subito un servizio extra", placeholder="Es: F24, CIGO, Inps...")
     if sq:
