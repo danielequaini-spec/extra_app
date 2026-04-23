@@ -178,7 +178,7 @@ elif st.session_state.page == "💸 Extra":
         df_mkt = df_mkt[df_mkt['ENTE'].str.contains(f_ente, case=False, na=False)]
 
     st.write("---")
-    t0, t1, t2 = st.tabs(["🌎 TUTTI", "🔵 HR JET", "🔴 CONSULENTE"])
+    t0, t1, t2 = st.tabs(["🌎 TUTTI", "🔵 ORION STP", "🔴 CONSULENTE"])
     
     def show_items(df_sub):
         if df_sub.empty:
