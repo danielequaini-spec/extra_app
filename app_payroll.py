@@ -5,7 +5,7 @@ import urllib.parse
 import re
 
 # --- CONFIGURAZIONE PAGINA ---
-st.set_page_config(page_title="Hub Payroll 🛸", layout="wide", page_icon="🛸")
+st.set_page_config(page_title="Tariffario Extra - Uso Interno 🛸", layout="wide", page_icon="🛸")
 
 # Custom CSS avanzato
 st.markdown("""
